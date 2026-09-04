@@ -2,7 +2,7 @@
 // @name         Twitter Chinese Bot Blocker
 // @name:zh-CN   推特中文机器人屏蔽器
 // @namespace    https://github.com/QyhOfficial/twitter-chinese-bot-blocker
-// @version      0.0.3
+// @version      0.0.4
 // @description  Block spam replies on Twitter/X that contain common Chinese bot phrases
 // @description:zh-CN 屏蔽推特评论区中的中文机器人垃圾回复
 // @author       QyhOfficial
@@ -70,19 +70,17 @@
         cells.forEach((cell) => {
             const tweet = cell.querySelector('article[data-testid="tweet"]');
 
-            // If tweet article hasn't rendered inside the cell yet, skip for now
-            if (!tweet) return;
+            if (tweet) {
+                const tweetText = tweet.querySelector('[data-testid="tweetText"]');
+                const textContent = tweetText?.textContent || "";
 
-            const tweetText = tweet.querySelector('[data-testid="tweetText"]');
-            const textContent = tweetText?.textContent || "";
-
-            if (containsBlockedPhrase(textContent)) {
-                // Spam: hide permanently
-                cell.style.display = "none";
-                console.log("[Bot Blocker] Hid a spam reply:", textContent.slice(0, 60));
+                if (containsBlockedPhrase(textContent)) {
+                    cell.style.display = "none";
+                    console.log("[Bot Blocker] Hid a spam reply:", textContent.slice(0, 60));
+                }
             }
 
-            // Mark as checked so CSS reveals it (or keeps it hidden if display:none)
+            // Always mark as checked so non-tweet cells (notifications, etc.) are revealed
             cell.setAttribute(CHECKED_ATTR, "true");
         });
     }
