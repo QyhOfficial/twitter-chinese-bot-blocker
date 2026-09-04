@@ -2,7 +2,7 @@
 // @name         Twitter Chinese Bot Blocker
 // @name:zh-CN   推特中文机器人屏蔽器
 // @namespace    https://github.com/QyhOfficial/twitter-chinese-bot-blocker
-// @version      0.0.4
+// @version      0.0.5
 // @description  Block spam replies on Twitter/X that contain common Chinese bot phrases
 // @description:zh-CN 屏蔽推特评论区中的中文机器人垃圾回复
 // @author       QyhOfficial
@@ -61,7 +61,19 @@
         return normalizedPatterns.some((pattern) => normalizedText.includes(pattern));
     }
 
-    // Find and hide tweets that contain blocked phrases
+    // Check if a tweet is the focal/main tweet of the current page
+    function isFocalTweet(tweet) {
+        const timeLink = tweet.querySelector("time")?.closest("a");
+        if (!timeLink) return false;
+        try {
+            const tweetPath = new URL(timeLink.href).pathname;
+            return window.location.pathname === tweetPath;
+        } catch {
+            return false;
+        }
+    }
+
+    // Find and hide reply tweets that contain blocked phrases
     function hideBotReplies() {
         const cells = document.querySelectorAll(
             '[data-testid="cellInnerDiv"]:not([' + CHECKED_ATTR + '])'
@@ -70,7 +82,7 @@
         cells.forEach((cell) => {
             const tweet = cell.querySelector('article[data-testid="tweet"]');
 
-            if (tweet) {
+            if (tweet && !isFocalTweet(tweet)) {
                 const tweetText = tweet.querySelector('[data-testid="tweetText"]');
                 const textContent = tweetText?.textContent || "";
 
