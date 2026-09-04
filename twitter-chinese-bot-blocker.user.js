@@ -2,10 +2,10 @@
 // @name         Twitter Chinese Bot Blocker
 // @name:zh-CN   推特中文机器人屏蔽器
 // @namespace    https://github.com/QyhOfficial/twitter-chinese-bot-blocker
-// @version      0.0.5
+// @version      0.0.6
 // @description  Block spam replies on Twitter/X that contain common Chinese bot phrases
 // @description:zh-CN 屏蔽推特评论区中的中文机器人垃圾回复
-// @author       QyhOfficial
+// @author       Eren Chin
 // @match        https://x.com/*
 // @match        https://twitter.com/*
 // @grant        none
@@ -28,6 +28,7 @@
         "比我好看的没我骚比我骚的没我好看",
         "应该没人比我玩的开了吧",
         "我福不黑不信你看",
+        "刷了半天的就她的主页能打",
     ];
 
     // ========== CSS Pre-hide ==========
@@ -42,14 +43,10 @@
 
     // ========== Core Logic ==========
 
-    // Strip whitespace, zero-width chars, variation selectors, and emoji
-    const JUNK_RE = new RegExp(
-        "[\\s\\u200B-\\u200F\\u2028-\\u202F\\u2060\\uFEFF\\uFE0E\\uFE0F]"
-        + "|\\p{Emoji_Presentation}|\\p{Emoji}\\uFE0F?",
-        "gu"
-    );
+    // Keep only CJK characters for matching — strips all ASCII, emoji,
+    // zero-width chars, and any other obfuscation injected between hanzi
     function normalize(text) {
-        return text.replace(JUNK_RE, "").toLowerCase();
+        return text.replace(/[^一-鿿]/g, "");
     }
 
     // Build normalized patterns once
