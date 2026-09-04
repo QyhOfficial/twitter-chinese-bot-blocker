@@ -1,3 +1,10 @@
+## 安装
+
+1. 先安装 [Tampermonkey](https://www.tampermonkey.net/) 浏览器扩展
+2. 前往 [Greasy Fork 脚本页面](https://greasyfork.org/zh-CN/scripts/594260-twitter-chinese-bot-blocker) 点击「安装此脚本」
+
+安装后脚本会自动在 Twitter/X 上运行，无需额外配置。
+
 ## 屏蔽关键词列表
 
 本脚本会自动隐藏推特评论区中包含以下内容的回帖：
