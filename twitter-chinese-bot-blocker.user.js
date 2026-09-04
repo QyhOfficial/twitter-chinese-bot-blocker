@@ -2,14 +2,14 @@
 // @name         Twitter Chinese Bot Blocker
 // @name:zh-CN   推特中文机器人屏蔽器
 // @namespace    https://github.com/QyhOfficial/twitter-chinese-bot-blocker
-// @version      0.0.1
+// @version      0.0.2
 // @description  Block spam replies on Twitter/X that contain common Chinese bot phrases
 // @description:zh-CN 屏蔽推特评论区中的中文机器人垃圾回复
 // @author       QyhOfficial
 // @match        https://x.com/*
 // @match        https://twitter.com/*
 // @grant        none
-// @run-at       document-idle
+// @run-at       document-start
 // @license      MIT
 // @homepageURL  https://github.com/QyhOfficial/twitter-chinese-bot-blocker
 // @supportURL   https://github.com/QyhOfficial/twitter-chinese-bot-blocker/issues
@@ -27,8 +27,15 @@
         "比她好看的没她骚比她骚的没她好看",
     ];
 
-    // Check interval in milliseconds (Twitter loads content dynamically)
-    const OBSERVE_THROTTLE_MS = 500;
+    // ========== CSS Pre-hide ==========
+    // Hide unchecked tweet cells by default so spam never flashes on screen.
+    // Clean tweets are revealed almost instantly after the check.
+
+    const CHECKED_ATTR = "data-bot-checked";
+    const style = document.createElement("style");
+    style.textContent =
+        `[data-testid="cellInnerDiv"]:not([${CHECKED_ATTR}]) { opacity: 0; }`;
+    (document.head || document.documentElement).appendChild(style);
 
     // ========== Core Logic ==========
 
@@ -48,47 +55,44 @@
 
     // Find and hide tweets that contain blocked phrases
     function hideBotReplies() {
-        // Each tweet/reply is rendered inside an article element
-        const tweets = document.querySelectorAll('article[data-testid="tweet"]');
+        const cells = document.querySelectorAll(
+            `[data-testid="cellInnerDiv"]:not([${CHECKED_ATTR}])`
+        );
 
-        tweets.forEach((tweet) => {
-            // Skip already-processed tweets
-            if (tweet.dataset.botChecked) return;
-            tweet.dataset.botChecked = "true";
+        cells.forEach((cell) => {
+            const tweet = cell.querySelector('article[data-testid="tweet"]');
+
+            // If tweet article hasn't rendered inside the cell yet, skip for now
+            if (!tweet) return;
 
             const tweetText = tweet.querySelector('[data-testid="tweetText"]');
-            if (!tweetText) return;
+            const textContent = tweetText?.textContent || "";
 
-            const textContent = tweetText.textContent || "";
-            if (!containsBlockedPhrase(textContent)) return;
+            if (containsBlockedPhrase(textContent)) {
+                // Spam: hide permanently
+                cell.style.display = "none";
+                console.log("[Bot Blocker] Hid a spam reply:", textContent.slice(0, 60));
+            }
 
-            // The tweet article is nested inside a wrapper cell;
-            // hide the nearest ancestor that forms the visible row
-            const wrapper = tweet.closest('[data-testid="cellInnerDiv"]') || tweet;
-            wrapper.style.display = "none";
-
-            console.log("[Bot Blocker] Hid a spam reply:", textContent.slice(0, 60));
+            // Mark as checked so CSS reveals it (or keeps it hidden if display:none)
+            cell.setAttribute(CHECKED_ATTR, "true");
         });
     }
 
     // ========== Observer ==========
 
-    let throttleTimer = null;
+    const observer = new MutationObserver(hideBotReplies);
 
-    function scheduleCheck() {
-        if (throttleTimer) return;
-        throttleTimer = setTimeout(() => {
-            throttleTimer = null;
-            hideBotReplies();
-        }, OBSERVE_THROTTLE_MS);
+    function startObserver() {
+        observer.observe(document.body, { childList: true, subtree: true });
+        hideBotReplies();
+        console.log("[Bot Blocker] Twitter Chinese Bot Blocker is active.");
     }
 
-    // Watch for dynamically loaded tweets (infinite scroll, navigation)
-    const observer = new MutationObserver(scheduleCheck);
-    observer.observe(document.body, { childList: true, subtree: true });
-
-    // Initial scan
-    hideBotReplies();
-
-    console.log("[Bot Blocker] Twitter Chinese Bot Blocker is active.");
+    // document-start means body may not exist yet
+    if (document.body) {
+        startObserver();
+    } else {
+        document.addEventListener("DOMContentLoaded", startObserver);
+    }
 })();
